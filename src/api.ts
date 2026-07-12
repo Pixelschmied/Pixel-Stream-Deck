@@ -15,28 +15,54 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 
 // ----- Browser mock -------------------------------------------------------
 
+const NONE = { type: "none" } as Action;
+
+/** Build a mock profile: 8 key labels sharing one colour + 4 encoder labels. */
+function mockProfile(
+  id: string,
+  name: string,
+  color: string,
+  keyLabels: string[],
+  encLabels: string[]
+): Profile {
+  const keys = Array.from({ length: 8 }, (_, i) => ({ label: keyLabels[i] ?? "", color, action: NONE }));
+  const encoders = Array.from({ length: 4 }, (_, i) => ({
+    label: encLabels[i] ?? "",
+    on_press: NONE,
+    on_turn_cw: NONE,
+    on_turn_ccw: NONE,
+    on_touch: NONE,
+  }));
+  return { id, name, pages: [{ id: "main", name: "Main", keys, encoders }], activates_for: [] };
+}
+
+const MOCK_PROFILES: Record<string, Profile> = {
+  default: mockProfile("default", "Default", "#3a3d52",
+    ["Discord", "Spotify", "Steam", "Claude", "Browser", "Screenshot", "Mute", "Battle.net"],
+    ["Volume", "Bright", "Mic", "Scene"]),
+  spotify: mockProfile("spotify", "Spotify", "#1db954",
+    ["Play/Pause", "Next", "Prev", "Like", "Shuffle", "Repeat", "Search", "Open Spotify"],
+    ["Volume", "Seek", "Bright", "Mute"]),
+  steam: mockProfile("steam", "Steam", "#66c0f4",
+    ["Library", "Big Picture", "Friends", "Store", "Downloads", "Screenshot", "Overlay", "Open Steam"],
+    ["Volume", "Bright", "Mic", "Scene"]),
+  discord: mockProfile("discord", "Discord", "#5865f2",
+    ["Mute", "Deafen", "Video", "Screen", "Disconnect", "Overlay", "Emoji", "Open Discord"],
+    ["Volume", "Mic", "Bright", "Scroll"]),
+  battlenet: mockProfile("battlenet", "Battle.net", "#148eff",
+    ["Launcher", "Friends", "Shop", "News", "Screenshot", "Mute", "Discord", "Record"],
+    ["Volume", "Bright", "Mic", "Scene"]),
+  claude: mockProfile("claude", "Claude", "#cc785c",
+    ["New Chat", "Open Claude", "Projects", "Copy", "Paste", "Search", "Sidebar", "Send"],
+    ["Volume", "Bright", "Scroll", "Zoom"]),
+};
+
 function mockSnapshot(): Snapshot {
-  const none = { type: "none" } as Action;
-  const keys = Array.from({ length: 8 }, (_, i) => ({
-    label: ["Discord", "Spotify", "Steam", "Claude", "Browser", "Screenshot", "Mute", "Battle.net"][i] ?? "",
-    color: ["#5865f2", "#1db954", "#66c0f4", "#cc785c", "#7ce0ff", "#9d7cff", "#ff6b6b", "#148eff"][i],
-    action: none,
+  const profiles: ProfileSummary[] = Object.values(MOCK_PROFILES).map((p) => ({
+    id: p.id,
+    name: p.name,
+    has_rules: p.id !== "default",
   }));
-  const encoders = ["Volume", "Mic", "Bright", "Scene"].map((label) => ({
-    label,
-    on_press: none,
-    on_turn_cw: none,
-    on_turn_ccw: none,
-    on_touch: none,
-  }));
-  const profiles: ProfileSummary[] = [
-    { id: "default", name: "Default", has_rules: false },
-    { id: "spotify", name: "Spotify", has_rules: true },
-    { id: "steam", name: "Steam", has_rules: true },
-    { id: "discord", name: "Discord", has_rules: true },
-    { id: "battlenet", name: "Battle.net", has_rules: true },
-    { id: "claude", name: "Claude", has_rules: true },
-  ];
   return {
     productName: "Pixel Gaming Helper",
     version: "0.1.0",
@@ -51,7 +77,7 @@ function mockSnapshot(): Snapshot {
     },
     profiles,
     activeProfileId: "default",
-    profile: { id: "default", name: "Default", pages: [{ id: "main", name: "Main", keys, encoders }], activates_for: [] },
+    profile: MOCK_PROFILES.default,
     settings: {
       start_minimized: false,
       minimize_to_tray_on_close: true,
@@ -72,7 +98,7 @@ export async function getSnapshot(): Promise<Snapshot> {
 }
 
 export async function setActiveProfile(id: string): Promise<Profile | null> {
-  if (!inTauri()) return null;
+  if (!inTauri()) return MOCK_PROFILES[id] ?? null;
   return invoke<Profile>("set_active_profile", { id });
 }
 
