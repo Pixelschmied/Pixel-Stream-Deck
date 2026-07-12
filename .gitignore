@@ -17,3 +17,6 @@ Thumbs.db
 
 # Local dev scratch
 /.shot.mjs
+
+# Updater signing key (SECRET - never commit)
+/.keys/

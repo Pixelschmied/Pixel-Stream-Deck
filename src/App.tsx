@@ -5,7 +5,9 @@ import { DeckView, type Selection } from "./components/DeckView";
 import { Inspector } from "./components/Inspector";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { ProfileSwitcher } from "./components/ProfileSwitcher";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { ProfileIcon, brandColor } from "./icons";
+import { checkForUpdate, type AvailableUpdate } from "./updater";
 
 type Tab = "deck" | "settings";
 
@@ -18,6 +20,10 @@ export function App() {
   const [tab, setTab] = useState<Tab>("deck");
   const [selection, setSelection] = useState<Selection | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
+  const [update, setUpdate] = useState<AvailableUpdate | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<number | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string>("");
   const firstLoad = useRef(true);
 
   // Initial load.
@@ -45,6 +51,38 @@ export function App() {
     });
     return () => unlisten?.();
   }, []);
+
+  // Check for an update once on startup (silent if up to date).
+  useEffect(() => {
+    checkForUpdate()
+      .then((u) => u && setUpdate(u))
+      .catch((e) => console.error("update check failed", e));
+  }, []);
+
+  const installUpdate = () => {
+    if (!update) return;
+    setUpdateProgress(0);
+    setUpdateError(null);
+    update.install(setUpdateProgress).catch((e) => {
+      setUpdateError(String(e));
+      setUpdateProgress(null);
+    });
+  };
+
+  const checkUpdatesManually = async () => {
+    setUpdateStatus("Suche nach Updates …");
+    try {
+      const u = await checkForUpdate();
+      if (u) {
+        setUpdate(u);
+        setUpdateStatus(`Update v${u.version} verfügbar.`);
+      } else {
+        setUpdateStatus("Du hast bereits die neueste Version.");
+      }
+    } catch (e) {
+      setUpdateStatus(`Fehler bei der Update-Suche: ${e}`);
+    }
+  };
 
   // Apply theme.
   useEffect(() => {
@@ -131,6 +169,15 @@ export function App() {
         </nav>
       </header>
 
+      {update && (
+        <UpdateBanner
+          update={update}
+          progress={updateProgress}
+          error={updateError}
+          onInstall={installUpdate}
+        />
+      )}
+
       {tab === "deck" ? (
         <main className="workspace">
           <ProfileSwitcher
@@ -169,7 +216,13 @@ export function App() {
         </main>
       ) : (
         <main className="workspace">
-          <SettingsPanel settings={settings} onChange={setSettings} />
+          <SettingsPanel
+            settings={settings}
+            onChange={setSettings}
+            onCheckUpdates={checkUpdatesManually}
+            updateStatus={updateStatus}
+            version={meta.version}
+          />
         </main>
       )}
     </div>

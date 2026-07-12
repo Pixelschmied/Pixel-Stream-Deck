@@ -1,14 +1,29 @@
 # Pixel Gaming Helper
 
-An open desktop app that fully drives the **Elgato Stream Deck +** — its 8 LCD
-keys, the touch strip and the 4 rotary encoders — as a replacement for the
-official Elgato software. Built with **Tauri + Rust** and a **React/TypeScript**
-UI. Lives in the system tray, renders the whole display, and (planned)
-switches profiles automatically based on the app you're using.
+**An open, lightweight replacement for the Elgato Stream Deck software, built for
+the Stream Deck +.** It drives all 8 LCD keys, the 800×100 touch strip and the 4
+rotary encoders — with brand logos on the keys, a system-tray presence, and a
+context engine that **switches profiles automatically depending on the app in
+the foreground** (Spotify, Steam, Discord, Battle.net, Claude, …). Built with
+**Tauri + Rust** and a **React/TypeScript** UI, and it **updates itself** from
+GitHub Releases.
 
-> Status: early foundation (v0.1). The hardware-agnostic core and the app shell
-> are in place and tested; rich rendering and the context engine are on the
-> roadmap below.
+[![CI](https://github.com/Pixelschmied/Pixel-Stream-Deck/actions/workflows/ci.yml/badge.svg)](https://github.com/Pixelschmied/Pixel-Stream-Deck/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Pixelschmied/Pixel-Stream-Deck?label=download)](https://github.com/Pixelschmied/Pixel-Stream-Deck/releases/latest)
+
+## ⬇️ Download (Windows)
+
+Grab the latest installer from the **[Releases page](https://github.com/Pixelschmied/Pixel-Stream-Deck/releases/latest)**
+— run the `…-setup.exe` (or `.msi`). After that you never need to download
+again: the app checks for new versions on startup and updates itself.
+
+> Releases are produced automatically by the [release workflow](.github/workflows/release.yml)
+> when a `v*` tag is pushed. If the Releases page is still empty, no version has
+> been tagged yet — see [Cutting a release](#cutting-a-release).
+
+> Highlights: hardware-agnostic core with 23 tests, real Elgato driver behind a
+> feature flag, system tray, context-aware profile switching, rich SVG key
+> rendering, working hotkey synthesis and in-app auto-updates.
 
 ## Why
 
@@ -100,6 +115,38 @@ Profiles and settings are stored as JSON in the OS app-config directory
 profile is created on first launch. Everything is editable in the app, and the
 files are human-readable if you want to hand-edit them.
 
+## Auto-updates
+
+The app uses the Tauri updater: on startup it fetches
+`releases/latest/download/latest.json`, and if a newer signed version exists it
+shows an **Update available** banner (there's also a manual check in Settings →
+Updates). Installing downloads the signed package and relaunches.
+
+Updates are only accepted if they're signed with the private key matching the
+public key in `src-tauri/tauri.conf.json`. For CI to sign releases, add two
+repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+| --- | --- |
+| `TAURI_SIGNING_PRIVATE_KEY` | contents of the generated private key file |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | the key's password (empty if none) |
+
+Regenerate a key with `pnpm tauri signer generate -w mykey.key` and put the
+matching `.pub` contents into the `plugins.updater.pubkey` field.
+
+## Cutting a release
+
+```bash
+# bump the version in package.json + src-tauri/tauri.conf.json, then:
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The [release workflow](.github/workflows/release.yml) builds the Windows
+installer (with real device support), signs the updater artifacts and publishes
+a GitHub Release with `latest.json` — which is exactly what the in-app updater
+reads. You can also trigger it from the Actions tab (workflow_dispatch).
+
 ## Roadmap
 
 - [x] Hardware-agnostic core (model, backend abstraction, controller) with tests
@@ -111,6 +158,7 @@ files are human-readable if you want to hand-edit them.
 - [x] Built-in profiles for Spotify, Steam, Discord, Battle.net and Claude
 - [x] Profile switcher UI with brand icons and animations
 - [x] Hotkey synthesis (`send_hotkey`) via enigo (modifiers, media/volume keys)
+- [x] In-app auto-updates + Windows release pipeline (GitHub Releases)
 - [ ] Rich rendering v2: live gauges, album art, per-key custom images
 - [ ] Multi-page navigation UI and profile management
 - [ ] Launch-on-startup implementation per platform

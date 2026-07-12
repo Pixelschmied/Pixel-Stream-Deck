@@ -3,10 +3,13 @@ import type { Settings, Theme } from "../types";
 interface Props {
   settings: Settings;
   onChange: (settings: Settings) => void;
+  onCheckUpdates: () => void;
+  updateStatus: string;
+  version: string;
 }
 
 /** The Settings tab: user-configurable options for the app and the deck. */
-export function SettingsPanel({ settings, onChange }: Props) {
+export function SettingsPanel({ settings, onChange, onCheckUpdates, updateStatus, version }: Props) {
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     onChange({ ...settings, [key]: value });
 
@@ -65,6 +68,19 @@ export function SettingsPanel({ settings, onChange }: Props) {
             <option value="light">Hell</option>
           </select>
         </label>
+      </section>
+
+      <section>
+        <h3>Updates</h3>
+        <p className="update-version">Installierte Version: v{version}</p>
+        <button className="test-btn" onClick={onCheckUpdates}>
+          Jetzt nach Updates suchen
+        </button>
+        {updateStatus && <p className="update-status">{updateStatus}</p>}
+        <p className="update-hint">
+          Beim Start wird automatisch geprüft, ob im Repository eine neue Version
+          veröffentlicht wurde.
+        </p>
       </section>
     </div>
   );
