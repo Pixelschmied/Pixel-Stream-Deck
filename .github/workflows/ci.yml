@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  core:
+    name: Rust core (deck-core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test (default)
+        run: cargo test -p deck-core
+      - name: Test (render feature)
+        run: cargo test -p deck-core --features render
+      - name: Type-check hardware driver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libudev-dev libhidapi-dev
+          cargo check -p deck-core --features hardware
+
+  frontend:
+    name: Frontend (Vite/TS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  app:
+    name: App check (Tauri)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libsoup-3.0-dev libxdo-dev libudev-dev libhidapi-dev
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Check app (default features)
+        run: cargo check -p pixel-gaming-helper
+      - name: Check app (all features)
+        run: cargo check -p pixel-gaming-helper --features hardware
