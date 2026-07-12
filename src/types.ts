@@ -67,11 +67,19 @@ export interface DeckInfo {
   touchstrip_size: [number, number];
 }
 
+export interface ProfileSummary {
+  id: string;
+  name: string;
+  has_rules: boolean;
+}
+
 export interface Snapshot {
   productName: string;
   version: string;
   hardwareBuild: boolean;
   deckInfo: DeckInfo;
+  profiles: ProfileSummary[];
+  activeProfileId: string;
   profile: Profile;
   settings: Settings;
 }

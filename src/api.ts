@@ -2,7 +2,7 @@
 // (e.g. `vite` in a plain browser for UI development), it falls back to an
 // in-memory mock so the whole UI is still explorable.
 
-import type { Action, Profile, Settings, Snapshot } from "./types";
+import type { Action, Profile, ProfileSummary, Settings, Snapshot } from "./types";
 
 /** True when the page is running inside the Tauri webview. */
 export const inTauri = (): boolean =>
@@ -29,6 +29,14 @@ function mockSnapshot(): Snapshot {
     on_turn_ccw: none,
     on_touch: none,
   }));
+  const profiles: ProfileSummary[] = [
+    { id: "default", name: "Default", has_rules: false },
+    { id: "spotify", name: "Spotify", has_rules: true },
+    { id: "steam", name: "Steam", has_rules: true },
+    { id: "discord", name: "Discord", has_rules: true },
+    { id: "battlenet", name: "Battle.net", has_rules: true },
+    { id: "claude", name: "Claude", has_rules: true },
+  ];
   return {
     productName: "Pixel Gaming Helper",
     version: "0.1.0",
@@ -41,6 +49,8 @@ function mockSnapshot(): Snapshot {
       key_image_size: [120, 120],
       touchstrip_size: [800, 100],
     },
+    profiles,
+    activeProfileId: "default",
     profile: { id: "default", name: "Default", pages: [{ id: "main", name: "Main", keys, encoders }], activates_for: [] },
     settings: {
       start_minimized: false,
@@ -59,6 +69,11 @@ function mockSnapshot(): Snapshot {
 export async function getSnapshot(): Promise<Snapshot> {
   if (!inTauri()) return mockSnapshot();
   return invoke<Snapshot>("get_snapshot");
+}
+
+export async function setActiveProfile(id: string): Promise<Profile | null> {
+  if (!inTauri()) return null;
+  return invoke<Profile>("set_active_profile", { id });
 }
 
 export async function saveProfile(profile: Profile): Promise<void> {

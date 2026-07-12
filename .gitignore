@@ -14,3 +14,6 @@ node_modules
 *.log
 .DS_Store
 Thumbs.db
+
+# Local dev scratch
+/.shot.mjs

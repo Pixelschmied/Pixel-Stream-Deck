@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { getSnapshot, inTauri, saveProfile, saveSettings } from "./api";
-import type { EncoderConfig, KeyConfig, Profile, Settings } from "./types";
+import { getSnapshot, inTauri, saveProfile, saveSettings, setActiveProfile } from "./api";
+import type { EncoderConfig, KeyConfig, Profile, ProfileSummary, Settings } from "./types";
 import { DeckView, type Selection } from "./components/DeckView";
 import { Inspector } from "./components/Inspector";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { ProfileSwitcher } from "./components/ProfileSwitcher";
+import { ProfileIcon, brandColor } from "./icons";
 
 type Tab = "deck" | "settings";
 
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
+  const [activeId, setActiveId] = useState<string>("default");
   const [meta, setMeta] = useState({ productName: "Pixel Gaming Helper", version: "", hardwareBuild: false });
   const [tab, setTab] = useState<Tab>("deck");
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -21,8 +25,25 @@ export function App() {
     getSnapshot().then((snap) => {
       setProfile(snap.profile);
       setSettings(snap.settings);
+      setProfiles(snap.profiles);
+      setActiveId(snap.activeProfileId);
       setMeta({ productName: snap.productName, version: snap.version, hardwareBuild: snap.hardwareBuild });
     });
+  }, []);
+
+  // React to auto profile switches coming from the context engine.
+  useEffect(() => {
+    if (!inTauri()) return;
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<Profile>("profile-activated", (e) => {
+        setProfile(e.payload);
+        setActiveId(e.payload.id);
+        setSelection(null);
+        setPageIndex(0);
+      }).then((fn) => (unlisten = fn));
+    });
+    return () => unlisten?.();
   }, []);
 
   // Apply theme.
@@ -46,7 +67,6 @@ export function App() {
     void saveSettings(settings);
   }, [settings]);
 
-  // Flip the first-load guard once both are present.
   useEffect(() => {
     if (profile && settings) firstLoad.current = false;
   }, [profile, settings]);
@@ -57,6 +77,15 @@ export function App() {
 
   const page = profile.pages[pageIndex] ?? profile.pages[0];
   const pageIds = profile.pages.map((p) => p.id);
+  const accent = brandColor(activeId);
+
+  const selectProfile = async (id: string) => {
+    setActiveId(id);
+    setSelection(null);
+    setPageIndex(0);
+    const p = await setActiveProfile(id);
+    if (p) setProfile(p);
+  };
 
   const updateKey = (index: number, key: KeyConfig) => {
     setProfile((prev) => {
@@ -88,6 +117,10 @@ export function App() {
           {!meta.hardwareBuild && <span className="badge">Simulation</span>}
           {!inTauri() && <span className="badge browser">Browser-Vorschau</span>}
         </div>
+        <div className="active-pill" style={accent ? { borderColor: accent, color: accent } : undefined}>
+          <ProfileIcon id={activeId} size={16} />
+          {profile.name}
+        </div>
         <nav className="tabs">
           <button className={tab === "deck" ? "active" : ""} onClick={() => setTab("deck")}>
             Deck
@@ -100,6 +133,12 @@ export function App() {
 
       {tab === "deck" ? (
         <main className="workspace">
+          <ProfileSwitcher
+            profiles={profiles}
+            activeId={activeId}
+            contextEnabled={settings.context_switching_enabled}
+            onSelect={selectProfile}
+          />
           <section className="stage">
             {profile.pages.length > 1 && (
               <div className="page-tabs">
