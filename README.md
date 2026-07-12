@@ -58,8 +58,8 @@ configuration regardless.
 Prerequisites: **Rust**, **Node + pnpm**, and the
 [Tauri system dependencies](https://tauri.app/start/prerequisites/) for your OS
 (on Debian/Ubuntu: `libwebkit2gtk-4.1-dev libgtk-3-dev
-libayatana-appindicator3-dev librsvg2-dev`; for the device driver also
-`libudev-dev libhidapi-dev`).
+libayatana-appindicator3-dev librsvg2-dev`; for hotkey synthesis
+`libxdo-dev`; for the device driver also `libudev-dev libhidapi-dev`).
 
 ```bash
 pnpm install
@@ -110,8 +110,8 @@ files are human-readable if you want to hand-edit them.
 - [x] Context engine: auto-switch profiles by foreground app
 - [x] Built-in profiles for Spotify, Steam, Discord, Battle.net and Claude
 - [x] Profile switcher UI with brand icons and animations
+- [x] Hotkey synthesis (`send_hotkey`) via enigo (modifiers, media/volume keys)
 - [ ] Rich rendering v2: live gauges, album art, per-key custom images
-- [ ] Hotkey synthesis (`send_hotkey`) via a cross-platform input backend
 - [ ] Multi-page navigation UI and profile management
 - [ ] Launch-on-startup implementation per platform
 

@@ -24,6 +24,7 @@ serde_json = { workspace = true }
 # build actually talks to the device; without it the app runs on the mock deck.
 deck-core = { path = "../crates/deck-core" }
 active-win-pos-rs = "0.11.0"
+enigo = "0.6"
 
 [features]
 # Rich rendering (brand logos + labels on keys) is on by default.

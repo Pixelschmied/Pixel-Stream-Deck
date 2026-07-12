@@ -8,6 +8,7 @@ mod actions;
 mod commands;
 mod context;
 mod device;
+mod input;
 mod settings;
 mod state;
 

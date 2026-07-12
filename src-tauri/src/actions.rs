@@ -19,12 +19,7 @@ pub fn execute(action: &Action) -> Result<(), String> {
             .map_err(|e| format!("failed to launch {path}: {e}")),
         Action::RunCommand { command } => run_shell(command),
         Action::OpenUrl { url } => open_target(url),
-        Action::SendHotkey { keys } => {
-            // Synthesizing key events is platform-specific and needs an extra
-            // dependency (e.g. `enigo`); wired up in a later milestone.
-            eprintln!("[action] SendHotkey {keys:?} is not implemented yet");
-            Ok(())
-        }
+        Action::SendHotkey { keys } => crate::input::send_hotkey(keys),
         // Handled inside the controller; nothing to do at the OS level.
         Action::SwitchPage { .. } | Action::AdjustBrightness { .. } | Action::None => Ok(()),
     }
