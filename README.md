@@ -81,8 +81,13 @@ pnpm dev      # http://localhost:1420
 
 ```bash
 cargo test -p deck-core                        # core logic (no hardware needed)
+cargo test -p deck-core --features render      # incl. the rich renderer
 cargo check -p deck-core --features hardware   # type-check the real driver
 pnpm build                                     # type-check + build the UI
+
+# Preview what the deck would display, as a PNG (no device required):
+cargo run -p deck-core --features render --example preview
+#   -> target/preview/deck.png
 ```
 
 On Linux you may need `udev` rules so a non-root user can access the device; see
@@ -101,9 +106,11 @@ files are human-readable if you want to hand-edit them.
 - [x] Real Stream Deck + driver behind a feature flag
 - [x] Tauri shell: system tray, close-to-tray, settings, profile editor
 - [x] Full-resolution touch-strip rendering (per-encoder colour bands)
-- [ ] Rich key/strip rendering: icons, text, fonts, gauges
-- [ ] Context engine: auto-switch profiles by foreground app
-      (model support via `activates_for` is already in place)
+- [x] Rich key/strip rendering: brand logos + labels via resvg (`render` feature)
+- [x] Context engine: auto-switch profiles by foreground app
+- [x] Built-in profiles for Spotify, Steam, Discord, Battle.net and Claude
+- [x] Profile switcher UI with brand icons and animations
+- [ ] Rich rendering v2: live gauges, album art, per-key custom images
 - [ ] Hotkey synthesis (`send_hotkey`) via a cross-platform input backend
 - [ ] Multi-page navigation UI and profile management
 - [ ] Launch-on-startup implementation per platform

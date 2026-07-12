@@ -10,9 +10,11 @@
 use crate::backend::{DeckBackend, DeckEvent, Result, Rgba8Image};
 use crate::model::{Action, Profile};
 
+#[cfg(not(feature = "render"))]
 use crate::model::{EncoderConfig, Page};
 
 /// A colour used to render a key's background when it has no icon.
+#[cfg(not(feature = "render"))]
 fn parse_hex_color(hex: &Option<String>) -> [u8; 4] {
     let default = [30, 30, 46, 255]; // a calm dark slate
     let Some(hex) = hex else { return default };
@@ -26,6 +28,7 @@ fn parse_hex_color(hex: &Option<String>) -> [u8; 4] {
 }
 
 /// Accent colours cycled across encoders/keys, matching the app icon.
+#[cfg(not(feature = "render"))]
 const PALETTE: [[u8; 4]; 6] = [
     [0x7c, 0xe0, 0xff, 255], // cyan
     [0xff, 0x6b, 0xd6, 255], // pink
@@ -39,6 +42,7 @@ const PALETTE: [[u8; 4]; 6] = [
 /// coloured band per encoder. Bound encoders glow in an accent colour; unbound
 /// ones stay dim. This deliberately uses the entire strip so the hardware's LCD
 /// is fully utilised rather than left blank.
+#[cfg(not(feature = "render"))]
 fn render_touchstrip(page: &Page, width: u16, height: u16, encoder_count: u8) -> Rgba8Image {
     let count = encoder_count.max(1) as usize;
     let w = width as usize;
@@ -152,6 +156,9 @@ impl<B: DeckBackend> Controller<B> {
 
     /// Push the current page's visuals onto the backend: every key plus the
     /// full-resolution touch strip.
+    ///
+    /// With the `render` feature this draws brand logos and labels; otherwise it
+    /// falls back to solid colour blocks (still using the whole touch strip).
     pub fn render(&mut self) -> Result<()> {
         let (kw, kh) = self.backend.info().key_image_size;
         let (sw, sh) = self.backend.info().touchstrip_size;
@@ -159,19 +166,39 @@ impl<B: DeckBackend> Controller<B> {
 
         // Compute everything that reads `self.profile` up front, so we don't
         // hold an immutable borrow of it while mutably borrowing `self.backend`.
-        let (key_colors, strip) = {
+        let (key_images, strip): (Vec<Rgba8Image>, Rgba8Image) = {
             let Some(page) = self.profile.page(&self.active_page) else {
                 return self.backend.clear();
             };
-            let key_colors: Vec<[u8; 4]> =
-                page.keys.iter().map(|k| parse_hex_color(&k.color)).collect();
-            let strip = render_touchstrip(page, sw, sh, encoder_count);
-            (key_colors, strip)
+
+            #[cfg(feature = "render")]
+            {
+                let key_images = page
+                    .keys
+                    .iter()
+                    .map(|k| {
+                        let brand = crate::brand_icons::brand_for_label(&k.label);
+                        crate::render::render_key(k, brand, (kw, kh))
+                    })
+                    .collect();
+                let accents = ["#7ce0ff", "#ff6bd6", "#9d7cff", "#7cffa8"];
+                let strip = crate::render::render_strip(&page.encoders, &accents, (sw, sh), encoder_count);
+                (key_images, strip)
+            }
+            #[cfg(not(feature = "render"))]
+            {
+                let key_images = page
+                    .keys
+                    .iter()
+                    .map(|k| Rgba8Image::solid(kw, kh, parse_hex_color(&k.color)))
+                    .collect();
+                let strip = render_touchstrip(page, sw, sh, encoder_count);
+                (key_images, strip)
+            }
         };
 
-        for (i, color) in key_colors.iter().enumerate() {
-            let img = Rgba8Image::solid(kw, kh, *color);
-            self.backend.set_key_image(i as u8, &img)?;
+        for (i, img) in key_images.iter().enumerate() {
+            self.backend.set_key_image(i as u8, img)?;
         }
         self.backend.set_touchstrip_image(&strip)?;
         Ok(())

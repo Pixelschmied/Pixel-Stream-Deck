@@ -19,7 +19,16 @@ elgato-streamdeck = { version = "0.13", optional = true }
 # elgato-streamdeck depends on, otherwise the DynamicImage types won't match.
 image = { version = "0.25", optional = true, default-features = false }
 
+# SVG rasterisation for rich key/strip rendering (icons, text, gauges).
+resvg = { version = "0.47", optional = true }
+
 [features]
 default = []
 # Pulls in the real Elgato Stream Deck driver and the hardware backend module.
 hardware = ["dep:elgato-streamdeck", "dep:image"]
+# Rich rendering of key/strip images (logos + labels) via resvg.
+render = ["dep:resvg"]
+
+[[example]]
+name = "preview"
+required-features = ["render"]

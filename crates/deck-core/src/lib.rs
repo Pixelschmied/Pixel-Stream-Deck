@@ -22,8 +22,12 @@
 //! [`MockBackend`]: backend::mock::MockBackend
 
 pub mod backend;
+#[cfg(feature = "render")]
+pub mod brand_icons;
 pub mod controller;
 pub mod model;
+#[cfg(feature = "render")]
+pub mod render;
 pub mod store;
 
 pub use backend::mock::MockBackend;
