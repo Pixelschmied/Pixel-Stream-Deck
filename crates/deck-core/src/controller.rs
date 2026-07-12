@@ -201,6 +201,8 @@ impl<B: DeckBackend> Controller<B> {
             self.backend.set_key_image(i as u8, img)?;
         }
         self.backend.set_touchstrip_image(&strip)?;
+        // Push the queued key images to the device (no-op on the mock).
+        self.backend.flush()?;
         Ok(())
     }
 
@@ -212,12 +214,23 @@ impl<B: DeckBackend> Controller<B> {
         let events = self.backend.poll_events()?;
         let mut actions = Vec::new();
         for event in events {
+            // A quick dial turn arrives as one event carrying several detents.
+            // Repeat the bound action once per detent so fast turns keep up
+            // instead of registering as a single step (or being missed).
+            let repeats = match event {
+                DeckEvent::EncoderTurn { ticks, .. } => (ticks.unsigned_abs() as u32).max(1),
+                _ => 1,
+            };
             if let Some(action) = self.handle_event(event)? {
                 match action {
                     Action::AdjustBrightness { delta } => {
-                        self.adjust_brightness(delta)?;
+                        self.adjust_brightness(delta.saturating_mul(repeats as i16))?;
                     }
-                    other => actions.push(other),
+                    other => {
+                        for _ in 0..repeats {
+                            actions.push(other.clone());
+                        }
+                    }
                 }
             }
         }
@@ -389,8 +402,26 @@ mod tests {
 
         let actions = c.pump().unwrap();
         assert_eq!(actions, vec![Action::RunCommand { command: "echo hi".into() }]);
-        assert_eq!(c.brightness(), 90); // 100 - 10
+        assert_eq!(c.brightness(), 80); // 100 - (10 * 2 detents)
         assert_eq!(c.active_page(), "second"); // key1 switched page
+    }
+
+    #[test]
+    fn fast_turn_repeats_os_action_per_detent() {
+        let mut page = Page::empty("main", "Main");
+        page.encoders[0].on_turn_cw = Action::RunCommand { command: "vol+".into() };
+        let profile = Profile {
+            id: "p".into(),
+            name: "P".into(),
+            pages: vec![page],
+            activates_for: vec![],
+        };
+        let mut backend = MockBackend::new();
+        backend.push_event(DeckEvent::EncoderTurn { index: 0, ticks: 3 });
+        let mut c = Controller::new(backend, profile);
+        let actions = c.pump().unwrap();
+        assert_eq!(actions.len(), 3);
+        assert!(actions.iter().all(|a| *a == Action::RunCommand { command: "vol+".into() }));
     }
 
     #[test]

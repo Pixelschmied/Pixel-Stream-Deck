@@ -184,7 +184,7 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <img src="/src-tauri/icons/32x32.png" width={24} height={24} alt="" />
+          <img src="/logo.png" width={24} height={24} alt="" />
           <strong>{meta.productName}</strong>
           <span className="version">v{meta.version}</span>
           {!inTauri() && <span className="badge browser">Browser-Vorschau</span>}

@@ -116,6 +116,9 @@ impl<B: DeckBackend + ?Sized> DeckBackend for Box<B> {
     fn clear(&mut self) -> Result<()> {
         (**self).clear()
     }
+    fn flush(&mut self) -> Result<()> {
+        (**self).flush()
+    }
     fn poll_events(&mut self) -> Result<Vec<DeckEvent>> {
         (**self).poll_events()
     }
@@ -137,6 +140,13 @@ pub trait DeckBackend {
 
     /// Clear all keys and the touch strip.
     fn clear(&mut self) -> Result<()>;
+
+    /// Flush any buffered key images to the device. Some drivers (including the
+    /// real Elgato one) queue key images and only send them on flush; backends
+    /// that send immediately can leave this as the default no-op.
+    fn flush(&mut self) -> Result<()> {
+        Ok(())
+    }
 
     /// Non-blocking: drain any input events that have arrived since the last call.
     fn poll_events(&mut self) -> Result<Vec<DeckEvent>>;

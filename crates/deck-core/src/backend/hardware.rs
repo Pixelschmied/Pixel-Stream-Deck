@@ -93,6 +93,12 @@ impl DeckBackend for HardwareBackend {
             .map_err(|e| DeckError::Io(e.to_string()))
     }
 
+    fn flush(&mut self) -> Result<()> {
+        // The driver queues key images set via set_button_image; this actually
+        // pushes them to the device.
+        self.deck.flush().map_err(|e| DeckError::Io(e.to_string()))
+    }
+
     fn poll_events(&mut self) -> Result<Vec<DeckEvent>> {
         let mut out = Vec::new();
         // Drain everything currently queued without blocking, then stop on the
