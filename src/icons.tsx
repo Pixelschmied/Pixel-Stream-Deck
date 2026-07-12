@@ -87,6 +87,25 @@ export function GamepadIcon({ size = 20, className }: { size?: number; className
   );
 }
 
+/** Infer a brand id from a free-text key label (e.g. "Open Spotify"). */
+export function brandForLabel(label: string): string | undefined {
+  const l = label.toLowerCase();
+  if (l.includes("spotify")) return "spotify";
+  if (l.includes("steam")) return "steam";
+  if (l.includes("discord")) return "discord";
+  if (l.includes("battle")) return "battlenet";
+  if (l.includes("claude")) return "claude";
+  return undefined;
+}
+
+/** The brand logo for a key label, if one applies. */
+export function KeyBrand({ label, size = 26 }: { label: string; size?: number }) {
+  const id = brandForLabel(label);
+  const brand = id ? PROFILE_BRAND[id] : undefined;
+  if (!brand) return null;
+  return <BrandIcon icon={brand} size={size} color="#ffffffe6" />;
+}
+
 /** Render whatever icon best represents a profile (brand logo or gamepad). */
 export function ProfileIcon({
   id,

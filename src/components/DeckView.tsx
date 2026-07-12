@@ -1,5 +1,6 @@
 import type { Page } from "../types";
 import { summarizeAction } from "../types";
+import { KeyBrand } from "../icons";
 
 export type Selection =
   | { kind: "key"; index: number }
@@ -29,6 +30,9 @@ export function DeckView({ page, selection, onSelect }: Props) {
             onClick={() => onSelect({ kind: "key", index: i })}
             title={summarizeAction(key.action)}
           >
+            <span className="deck-key-brand">
+              <KeyBrand label={key.label} />
+            </span>
             <span className="deck-key-label">{key.label || `Taste ${i + 1}`}</span>
             <span className="deck-key-action">{summarizeAction(key.action)}</span>
           </button>

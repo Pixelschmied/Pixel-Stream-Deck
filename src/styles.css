@@ -149,7 +149,7 @@ body {
   color: #0c0d14;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 8px;
   text-align: left;
   font-weight: 600;
@@ -159,9 +159,21 @@ body {
 .deck-key:hover {
   transform: translateY(-2px);
 }
+.deck-key:hover .deck-key-brand svg {
+  transform: scale(1.12);
+}
 .deck-key.selected {
   border-color: #fff;
   box-shadow: 0 0 0 2px var(--accent);
+}
+.deck-key-brand {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+}
+.deck-key-brand svg {
+  transition: transform 0.14s ease;
 }
 .deck-key-label {
   font-size: 13px;

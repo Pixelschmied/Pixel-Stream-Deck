@@ -18,8 +18,8 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 function mockSnapshot(): Snapshot {
   const none = { type: "none" } as Action;
   const keys = Array.from({ length: 8 }, (_, i) => ({
-    label: ["Discord", "OBS", "Spotify", "Browser", "Shot", "Mute", "Clip", "Steam"][i] ?? "",
-    color: ["#5865f2", "#302e31", "#1db954", "#7ce0ff", "#9d7cff", "#ff6b6b", "#ffd166", "#7cffa8"][i],
+    label: ["Discord", "Spotify", "Steam", "Claude", "Browser", "Screenshot", "Mute", "Battle.net"][i] ?? "",
+    color: ["#5865f2", "#1db954", "#66c0f4", "#cc785c", "#7ce0ff", "#9d7cff", "#ff6b6b", "#148eff"][i],
     action: none,
   }));
   const encoders = ["Volume", "Mic", "Bright", "Scene"].map((label) => ({
