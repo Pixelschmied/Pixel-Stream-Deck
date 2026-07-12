@@ -6,6 +6,7 @@
 
 mod actions;
 mod commands;
+mod context;
 mod device;
 mod settings;
 mod state;
@@ -16,13 +17,33 @@ use std::thread;
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Manager, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 
-use deck_core::DeckInfo;
+use deck_core::{DeckInfo, Profile};
 
 use crate::device::DeviceCommand;
 use crate::settings::Settings;
 use crate::state::AppState;
+
+/// Make `id` the active profile: update shared state, persist the choice,
+/// redraw the device and tell the UI. Returns the activated profile.
+pub(crate) fn activate_profile(app: &AppHandle, id: &str) -> Option<Profile> {
+    let state = app.try_state::<AppState>()?;
+    let profile = state.profile_by_id(id)?;
+    if let Ok(mut g) = state.profile.lock() {
+        *g = profile.clone();
+    }
+    if let Ok(mut g) = state.active_id.lock() {
+        *g = id.to_string();
+    }
+    if let Ok(mut s) = state.settings.lock() {
+        s.active_profile_id = id.to_string();
+        let _ = s.save(&state.config_dir);
+    }
+    state.notify_device(DeviceCommand::Rerender);
+    let _ = app.emit("profile-activated", &profile);
+    Some(profile)
+}
 
 /// Show and focus the main window, creating focus even if it was hidden to tray.
 fn reveal_main_window(app: &tauri::AppHandle) {
@@ -80,11 +101,24 @@ pub fn run() {
                 .expect("a platform config directory must exist");
             std::fs::create_dir_all(&config_dir).ok();
 
-            // Load settings + the active profile (seeding defaults on first run).
+            // Load settings and all profiles (seeding built-ins on first run).
             let settings = Settings::load(&config_dir).sanitized();
-            let profile =
-                state::load_or_create_profile(&config_dir, &settings.active_profile_id);
-            let profile = Arc::new(Mutex::new(profile));
+            let profiles = state::load_all_profiles(&config_dir);
+
+            // Pick the active profile: the saved one if it still exists,
+            // otherwise the first available.
+            let active_id = profiles
+                .iter()
+                .find(|p| p.id == settings.active_profile_id)
+                .or_else(|| profiles.first())
+                .map(|p| p.id.clone())
+                .unwrap_or_else(|| "default".to_string());
+            let active_profile = profiles
+                .iter()
+                .find(|p| p.id == active_id)
+                .cloned()
+                .unwrap_or_else(|| Profile::new("default", "Default"));
+            let profile = Arc::new(Mutex::new(active_profile));
 
             // Spawn the device worker and keep the command channel in state.
             let (tx, rx) = mpsc::channel::<DeviceCommand>();
@@ -99,10 +133,15 @@ pub fn run() {
             app.manage(AppState {
                 config_dir,
                 settings: Mutex::new(settings),
+                profiles: Mutex::new(profiles),
+                active_id: Mutex::new(active_id),
                 profile,
                 deck_info: DeckInfo::stream_deck_plus("—"),
                 device_tx: Mutex::new(Some(tx)),
             });
+
+            // Start the foreground-app watcher (no-ops until enabled in settings).
+            context::spawn(app.handle().clone());
 
             setup_tray(app)?;
 
@@ -129,6 +168,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_snapshot,
+            commands::set_active_profile,
             commands::save_profile,
             commands::save_settings,
             commands::run_action,

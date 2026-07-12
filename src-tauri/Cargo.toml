@@ -23,6 +23,7 @@ serde_json = { workspace = true }
 # The hardware-agnostic core. The `hardware` feature is forwarded so a release
 # build actually talks to the device; without it the app runs on the mock deck.
 deck-core = { path = "../crates/deck-core" }
+active-win-pos-rs = "0.11.0"
 
 [features]
 default = []
