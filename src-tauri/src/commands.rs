@@ -51,14 +51,15 @@ fn summaries(state: &AppState) -> Vec<ProfileSummary> {
 
 /// Return the current profile, all profiles, settings and deck layout.
 #[tauri::command]
-pub fn get_snapshot(state: State<'_, AppState>) -> Result<Snapshot, String> {
+pub fn get_snapshot(app: AppHandle, state: State<'_, AppState>) -> Result<Snapshot, String> {
     let settings = state.settings.lock().map_err(|_| "settings lock poisoned")?.clone();
     let profile = state.profile.lock().map_err(|_| "profile lock poisoned")?.clone();
     let active_profile_id = state.active_id.lock().map_err(|_| "active id lock poisoned")?.clone();
     let device_status = state.device_status.lock().map_err(|_| "status lock poisoned")?.clone();
     Ok(Snapshot {
         product_name: "Pixel Gaming Helper".to_string(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
+        // Real app version from tauri.conf.json (not the workspace crate version).
+        version: app.package_info().version.to_string(),
         hardware_build: cfg!(feature = "hardware"),
         deck_info: state.deck_info.clone(),
         device_status,
