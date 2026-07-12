@@ -237,8 +237,10 @@ pub fn default_profiles() -> Vec<Profile> {
                 ("Mute", hotkey(&["ctrl", "shift", "m"])),
                 ("Deafen", hotkey(&["ctrl", "shift", "d"])),
                 ("Video", hotkey(&["ctrl", "shift", "v"])),
-                ("Screen", hotkey(&["ctrl", "shift", "e"])),
-                ("Disconnect", hotkey(&["ctrl", "shift", "d"])),
+                ("Screen", hotkey(&["ctrl", "shift", "s"])),
+                // Bind this same key in OBS to "Start Streaming" AND "Stop
+                // Streaming" so one press toggles your stream on/off.
+                ("Stream", hotkey(&["ctrl", "shift", "f12"])),
                 ("Overlay", hotkey(&["shift", "`"])),
                 ("Emoji", hotkey(&["ctrl", "e"])),
                 ("Open", launch("discord")),

@@ -115,6 +115,9 @@ pub fn run(
 
     let retry_every = Duration::from_secs(3);
     let mut last_retry = Instant::now();
+    // Only treat the device as gone after several consecutive read failures, so
+    // a single transient USB hiccup doesn't drop (and flicker) the connection.
+    let mut read_errors: u32 = 0;
 
     loop {
         // Drain any pending commands first.
@@ -156,6 +159,7 @@ pub fn run(
         // Process device input.
         match controller.pump() {
             Ok(to_run) => {
+                read_errors = 0;
                 for action in to_run {
                     if let Err(e) = actions::execute(&action) {
                         eprintln!("[device] action error: {e}");
@@ -163,11 +167,12 @@ pub fn run(
                 }
             }
             Err(e) => {
-                eprintln!("[device] input error: {e}");
-                if connected {
-                    // The device likely went away — drop back to the mock and
-                    // let the reconnect loop pick it up again.
+                read_errors += 1;
+                // Tolerate transient errors; only give up after a sustained run.
+                if connected && read_errors >= 20 {
+                    eprintln!("[device] input error, device lost: {e}");
                     connected = false;
+                    read_errors = 0;
                     let (c, _) = build_controller(&profile, brightness);
                     controller = c;
                     report(&app, &status, DeviceStatus::Searching);

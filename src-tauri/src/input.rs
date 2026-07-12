@@ -1,11 +1,20 @@
 //! Keyboard/hotkey synthesis via `enigo`. Turns an action's list of key names
 //! (e.g. `["ctrl","shift","m"]` or `["playpause"]`) into real key events.
 //!
-//! All but the last key are treated as modifiers held down while the last key
-//! is clicked, then released — the usual chord behaviour. A single media key
-//! (volume, play/pause, …) is just clicked.
+//! The `Enigo` instance is created once per thread and reused: creating a fresh
+//! one for every keystroke is expensive and, on Windows, its first synthesized
+//! event is frequently dropped — which made keys need several presses and dials
+//! barely register. Modifiers are also held briefly around the trigger so target
+//! apps (Discord global keybinds, media keys, …) reliably catch the chord.
+
+use std::cell::RefCell;
+use std::time::Duration;
 
 use enigo::{Direction, Enigo, Key, Keyboard, Settings};
+
+thread_local! {
+    static ENIGO: RefCell<Option<Enigo>> = RefCell::new(None);
+}
 
 /// Translate a key name to an enigo [`Key`]. Case-insensitive; single
 /// characters map to their Unicode key.
@@ -43,7 +52,6 @@ fn parse_key(name: &str) -> Option<Key> {
 }
 
 fn parse_function_or_char(n: &str) -> Option<Key> {
-    // Function keys F1..F13.
     if let Some(num) = n.strip_prefix('f').and_then(|d| d.parse::<u8>().ok()) {
         return match num {
             1 => Some(Key::F1),
@@ -62,7 +70,6 @@ fn parse_function_or_char(n: &str) -> Option<Key> {
             _ => None,
         };
     }
-    // Single printable character.
     let mut chars = n.chars();
     match (chars.next(), chars.next()) {
         (Some(c), None) => Some(Key::Unicode(c)),
@@ -70,26 +77,43 @@ fn parse_function_or_char(n: &str) -> Option<Key> {
     }
 }
 
-/// Send a hotkey chord. Returns an error string on failure (no display, key not
-/// recognised, backend error).
+/// Send a hotkey chord using the reused per-thread [`Enigo`]. Modifiers are held
+/// while the trigger key is pressed for a short moment, then released.
 pub fn send_hotkey(keys: &[String]) -> Result<(), String> {
     let parsed: Vec<Key> = keys.iter().filter_map(|k| parse_key(k)).collect();
     if parsed.is_empty() {
         return Err(format!("no recognisable keys in {keys:?}"));
     }
 
-    let mut enigo = Enigo::new(&Settings::default()).map_err(|e| e.to_string())?;
-    let (modifiers, trigger) = parsed.split_at(parsed.len() - 1);
+    ENIGO.with(|cell| {
+        let mut guard = cell.borrow_mut();
+        if guard.is_none() {
+            *guard = Some(Enigo::new(&Settings::default()).map_err(|e| e.to_string())?);
+        }
+        let enigo = guard.as_mut().expect("just initialized");
 
-    for m in modifiers {
-        enigo.key(*m, Direction::Press).map_err(|e| e.to_string())?;
-    }
-    let result = enigo.key(trigger[0], Direction::Click).map_err(|e| e.to_string());
-    // Always release modifiers, even if the trigger failed.
-    for m in modifiers.iter().rev() {
-        let _ = enigo.key(*m, Direction::Release);
-    }
-    result
+        let (modifiers, trigger) = parsed.split_at(parsed.len() - 1);
+
+        for m in modifiers {
+            enigo.key(*m, Direction::Press).map_err(|e| e.to_string())?;
+            std::thread::sleep(Duration::from_millis(12));
+        }
+
+        // Press, hold briefly so the target reliably registers it, then release.
+        let result = (|| -> Result<(), String> {
+            enigo.key(trigger[0], Direction::Press).map_err(|e| e.to_string())?;
+            std::thread::sleep(Duration::from_millis(24));
+            enigo.key(trigger[0], Direction::Release).map_err(|e| e.to_string())?;
+            Ok(())
+        })();
+
+        // Always release modifiers, even if the trigger failed.
+        for m in modifiers.iter().rev() {
+            std::thread::sleep(Duration::from_millis(8));
+            let _ = enigo.key(*m, Direction::Release);
+        }
+        result
+    })
 }
 
 #[cfg(test)]
