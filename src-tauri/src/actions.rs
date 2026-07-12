@@ -20,6 +20,7 @@ pub fn execute(action: &Action) -> Result<(), String> {
         Action::RunCommand { command } => run_shell(command),
         Action::OpenUrl { url } => open_target(url),
         Action::SendHotkey { keys } => crate::input::send_hotkey(keys),
+        Action::Spotify { op } => crate::spotify::control(op),
         // Handled inside the controller; nothing to do at the OS level.
         Action::SwitchPage { .. } | Action::AdjustBrightness { .. } | Action::None => Ok(()),
     }
@@ -42,6 +43,11 @@ fn run_shell(command: &str) -> Result<(), String> {
     cmd.spawn()
         .map(|_| ())
         .map_err(|e| format!("failed to run command: {e}"))
+}
+
+/// Open a URL/path with the OS default handler (public wrapper).
+pub fn open_url(target: &str) -> Result<(), String> {
+    open_target(target)
 }
 
 /// Open a URL or file path with the OS default handler.

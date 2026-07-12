@@ -118,3 +118,24 @@ pub fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<(
 pub fn run_action(action: Action) -> Result<(), String> {
     crate::actions::execute(&action)
 }
+
+/// Start the Spotify login: opens the browser to the authorize page and returns
+/// the URL. The token exchange completes in the background on redirect.
+#[tauri::command]
+pub fn spotify_connect(state: State<'_, AppState>) -> Result<String, String> {
+    let client_id = state
+        .settings
+        .lock()
+        .map_err(|_| "settings lock poisoned")?
+        .spotify_client_id
+        .clone();
+    let url = crate::spotify::begin_login(&client_id, state.config_dir.clone())?;
+    let _ = crate::actions::open_url(&url);
+    Ok(url)
+}
+
+/// Whether Spotify is currently authorized.
+#[tauri::command]
+pub fn spotify_connected() -> bool {
+    crate::spotify::is_connected()
+}

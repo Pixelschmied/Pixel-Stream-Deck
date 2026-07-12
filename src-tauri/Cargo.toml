@@ -27,6 +27,8 @@ active-win-pos-rs = "0.11.0"
 enigo = "0.6"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
+rspotify = { version = "0.16", default-features = false, features = ["client-reqwest", "reqwest-rustls-tls"] }
+chrono = { version = "0.4", default-features = false }
 
 [features]
 # Rich rendering (brand logos + labels on keys) is on by default.

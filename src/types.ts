@@ -7,7 +7,8 @@ export type Action =
   | { type: "open_url"; url: string }
   | { type: "send_hotkey"; keys: string[] }
   | { type: "switch_page"; page_id: string }
-  | { type: "adjust_brightness"; delta: number };
+  | { type: "adjust_brightness"; delta: number }
+  | { type: "spotify"; op: string };
 
 export type ActionKind = Action["type"];
 
@@ -56,6 +57,7 @@ export interface Settings {
   active_profile_id: string;
   context_switching_enabled: boolean;
   theme: Theme;
+  spotify_client_id: string;
 }
 
 export interface DeckInfo {
@@ -99,6 +101,7 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
   send_hotkey: "Tastenkürzel senden",
   switch_page: "Seite wechseln",
   adjust_brightness: "Helligkeit ändern",
+  spotify: "Spotify steuern",
 };
 
 /** A fresh action of the given kind with sensible empty fields. */
@@ -116,6 +119,8 @@ export function emptyAction(kind: ActionKind): Action {
       return { type: "switch_page", page_id: "" };
     case "adjust_brightness":
       return { type: "adjust_brightness", delta: 10 };
+    case "spotify":
+      return { type: "spotify", op: "play_pause" };
     default:
       return { type: "none" };
   }
@@ -136,6 +141,8 @@ export function summarizeAction(action: Action): string {
       return `⇄ Seite: ${action.page_id || "?"}`;
     case "adjust_brightness":
       return `☀ ${action.delta > 0 ? "+" : ""}${action.delta}%`;
+    case "spotify":
+      return `🎧 ${action.op}`;
     default:
       return "—";
   }

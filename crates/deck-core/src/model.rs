@@ -38,6 +38,9 @@ pub enum Action {
     SwitchPage { page_id: String },
     /// Adjust deck brightness by a relative amount (percent, may be negative).
     AdjustBrightness { delta: i16 },
+    /// Control Spotify via the Web API (reliable, targets Spotify regardless of
+    /// focus). `op` is one of `play_pause`, `next`, `prev`.
+    Spotify { op: String },
 }
 
 impl Action {

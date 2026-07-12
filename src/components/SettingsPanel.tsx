@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { Settings, Theme } from "../types";
+import { spotifyConnect, spotifyConnected } from "../api";
 
 interface Props {
   settings: Settings;
@@ -12,6 +14,22 @@ interface Props {
 export function SettingsPanel({ settings, onChange, onCheckUpdates, updateStatus, version }: Props) {
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     onChange({ ...settings, [key]: value });
+
+  const [spotifyOk, setSpotifyOk] = useState(false);
+  const [spotifyMsg, setSpotifyMsg] = useState("");
+  useEffect(() => {
+    spotifyConnected().then(setSpotifyOk);
+  }, []);
+  const connectSpotify = async () => {
+    setSpotifyMsg("Browser wird geöffnet — bitte bei Spotify anmelden …");
+    try {
+      await spotifyConnect();
+      // Give the redirect a moment, then re-check.
+      setTimeout(() => spotifyConnected().then(setSpotifyOk), 4000);
+    } catch (e) {
+      setSpotifyMsg(String(e));
+    }
+  };
 
   return (
     <div className="settings">
@@ -68,6 +86,27 @@ export function SettingsPanel({ settings, onChange, onCheckUpdates, updateStatus
             <option value="light">Hell</option>
           </select>
         </label>
+      </section>
+
+      <section>
+        <h3>Spotify</h3>
+        <label>
+          Client ID
+          <input
+            placeholder="aus deiner Spotify-Developer-App"
+            value={settings.spotify_client_id}
+            onChange={(e) => set("spotify_client_id", e.target.value.trim())}
+          />
+        </label>
+        <button className="test-btn" onClick={connectSpotify}>
+          {spotifyOk ? "✓ Verbunden — neu verbinden" : "Mit Spotify verbinden"}
+        </button>
+        {spotifyMsg && <p className="update-status">{spotifyMsg}</p>}
+        <p className="update-hint">
+          Registriere eine kostenlose App auf developer.spotify.com, Redirect-URI
+          <code> http://127.0.0.1:8888/callback</code>, und trage die Client-ID hier
+          ein. Erfordert Spotify Premium.
+        </p>
       </section>
 
       <section>

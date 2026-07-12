@@ -97,6 +97,14 @@ export function ActionEditor({ action, pageIds, onChange }: Props) {
           %
         </label>
       )}
+
+      {action.type === "spotify" && (
+        <select value={action.op} onChange={(e) => onChange({ ...action, op: e.target.value })}>
+          <option value="play_pause">Play / Pause</option>
+          <option value="next">Nächster Titel</option>
+          <option value="prev">Vorheriger Titel</option>
+        </select>
+      )}
     </div>
   );
 }

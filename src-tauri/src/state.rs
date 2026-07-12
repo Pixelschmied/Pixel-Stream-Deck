@@ -114,6 +114,9 @@ fn launch(path: &str) -> Action {
 fn url(u: &str) -> Action {
     Action::OpenUrl { url: u.to_string() }
 }
+fn spotify(op: &str) -> Action {
+    Action::Spotify { op: op.to_string() }
+}
 
 /// Build a one-page profile from a color and a list of `(label, action)` keys.
 fn make_profile(
@@ -190,9 +193,9 @@ pub fn default_profiles() -> Vec<Profile> {
             "#1db954",
             Some("spotify"),
             vec![
-                ("Play/Pause", hotkey(&["playpause"])),
-                ("Next", hotkey(&["nexttrack"])),
-                ("Prev", hotkey(&["prevtrack"])),
+                ("Play/Pause", spotify("play_pause")),
+                ("Next", spotify("next")),
+                ("Prev", spotify("prev")),
                 ("Like", hotkey(&["alt", "shift", "b"])),
                 ("Shuffle", hotkey(&["ctrl", "s"])),
                 ("Repeat", hotkey(&["ctrl", "r"])),

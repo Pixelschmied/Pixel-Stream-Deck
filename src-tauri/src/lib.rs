@@ -10,6 +10,7 @@ mod context;
 mod device;
 mod input;
 mod settings;
+mod spotify;
 mod state;
 
 use std::sync::mpsc;
@@ -108,6 +109,13 @@ pub fn run() {
             let settings = Settings::load(&config_dir).sanitized();
             let profiles = state::load_all_profiles(&config_dir);
 
+            // Restore a cached Spotify session in the background (network).
+            {
+                let cid = settings.spotify_client_id.clone();
+                let cd = config_dir.clone();
+                std::thread::spawn(move || spotify::restore(&cid, &cd));
+            }
+
             // Pick the active profile: the saved one if it still exists,
             // otherwise the first available.
             let active_id = profiles
@@ -181,6 +189,8 @@ pub fn run() {
             commands::save_profile,
             commands::save_settings,
             commands::run_action,
+            commands::spotify_connect,
+            commands::spotify_connected,
         ])
         .build(tauri::generate_context!())
         .expect("error while building Pixel Gaming Helper")

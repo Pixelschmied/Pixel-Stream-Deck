@@ -33,6 +33,8 @@ pub struct Settings {
     pub context_switching_enabled: bool,
     /// UI colour theme.
     pub theme: Theme,
+    /// Spotify app Client ID for the Web API integration (empty = not set up).
+    pub spotify_client_id: String,
 }
 
 impl Default for Settings {
@@ -45,6 +47,7 @@ impl Default for Settings {
             active_profile_id: "default".to_string(),
             context_switching_enabled: false,
             theme: Theme::System,
+            spotify_client_id: String::new(),
         }
     }
 }

@@ -65,7 +65,7 @@ function mockSnapshot(): Snapshot {
   }));
   return {
     productName: "Pixel Gaming Helper",
-    version: "0.1.5",
+    version: "0.1.6",
     hardwareBuild: false,
     deckInfo: {
       model: "Stream Deck +",
@@ -87,6 +87,7 @@ function mockSnapshot(): Snapshot {
       active_profile_id: "default",
       context_switching_enabled: false,
       theme: "system",
+      spotify_client_id: "",
     },
   };
 }
@@ -111,6 +112,16 @@ export async function saveProfile(profile: Profile): Promise<void> {
 export async function saveSettings(settings: Settings): Promise<void> {
   if (!inTauri()) return;
   return invoke<void>("save_settings", { settings });
+}
+
+export async function spotifyConnect(): Promise<string> {
+  if (!inTauri()) return "";
+  return invoke<string>("spotify_connect");
+}
+
+export async function spotifyConnected(): Promise<boolean> {
+  if (!inTauri()) return false;
+  return invoke<boolean>("spotify_connected");
 }
 
 export async function runAction(action: Action): Promise<void> {
