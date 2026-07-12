@@ -238,9 +238,9 @@ pub fn default_profiles() -> Vec<Profile> {
                 ("Deafen", hotkey(&["ctrl", "shift", "d"])),
                 ("Video", hotkey(&["ctrl", "shift", "v"])),
                 ("Screen", hotkey(&["ctrl", "shift", "s"])),
-                // Bind this same key in OBS to "Start Streaming" AND "Stop
-                // Streaming" so one press toggles your stream on/off.
-                ("Stream", hotkey(&["ctrl", "shift", "f12"])),
+                // Discord "Go Live" / screen share. Bind this combo in Discord's
+                // keybinds (Discord has no default for it).
+                ("Go Live", hotkey(&["ctrl", "shift", "g"])),
                 ("Overlay", hotkey(&["shift", "`"])),
                 ("Emoji", hotkey(&["ctrl", "e"])),
                 ("Open", launch("discord")),
