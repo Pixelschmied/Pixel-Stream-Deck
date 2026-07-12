@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getSnapshot, inTauri, saveProfile, saveSettings, setActiveProfile } from "./api";
-import type { EncoderConfig, KeyConfig, Profile, ProfileSummary, Settings } from "./types";
+import type { DeviceStatus, EncoderConfig, KeyConfig, Profile, ProfileSummary, Settings } from "./types";
 import { DeckView, type Selection } from "./components/DeckView";
 import { Inspector } from "./components/Inspector";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -11,11 +11,33 @@ import { checkForUpdate, type AvailableUpdate } from "./updater";
 
 type Tab = "deck" | "settings";
 
+function DeviceBadge({ status, hardwareBuild }: { status: DeviceStatus; hardwareBuild: boolean }) {
+  if (status.state === "connected") {
+    return (
+      <span className="badge device ok" title={`Serial: ${status.serial}`}>
+        ● {status.model}
+      </span>
+    );
+  }
+  if (status.state === "searching") {
+    return <span className="badge device searching">Suche Gerät …</span>;
+  }
+  const title = hardwareBuild
+    ? "Kein Stream Deck + gefunden. Läuft die offizielle Elgato-Software noch? Bitte komplett beenden (auch im Tray), dann wird das Gerät automatisch übernommen."
+    : "Dieser Build hat keinen Geräte-Support.";
+  return (
+    <span className="badge device warn" title={title}>
+      ⚠ Kein Gerät
+    </span>
+  );
+}
+
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [activeId, setActiveId] = useState<string>("default");
+  const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({ state: "searching" });
   const [meta, setMeta] = useState({ productName: "Pixel Gaming Helper", version: "", hardwareBuild: false });
   const [tab, setTab] = useState<Tab>("deck");
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -33,8 +55,21 @@ export function App() {
       setSettings(snap.settings);
       setProfiles(snap.profiles);
       setActiveId(snap.activeProfileId);
+      setDeviceStatus(snap.deviceStatus);
       setMeta({ productName: snap.productName, version: snap.version, hardwareBuild: snap.hardwareBuild });
     });
+  }, []);
+
+  // Live device connection status from the worker thread.
+  useEffect(() => {
+    if (!inTauri()) return;
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<DeviceStatus>("device-status", (e) => setDeviceStatus(e.payload)).then(
+        (fn) => (unlisten = fn)
+      );
+    });
+    return () => unlisten?.();
   }, []);
 
   // React to auto profile switches coming from the context engine.
@@ -152,8 +187,8 @@ export function App() {
           <img src="/src-tauri/icons/32x32.png" width={24} height={24} alt="" />
           <strong>{meta.productName}</strong>
           <span className="version">v{meta.version}</span>
-          {!meta.hardwareBuild && <span className="badge">Simulation</span>}
           {!inTauri() && <span className="badge browser">Browser-Vorschau</span>}
+          <DeviceBadge status={deviceStatus} hardwareBuild={meta.hardwareBuild} />
         </div>
         <div className="active-pill" style={accent ? { borderColor: accent, color: accent } : undefined}>
           <ProfileIcon id={activeId} size={16} />

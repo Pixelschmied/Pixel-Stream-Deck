@@ -65,7 +65,7 @@ function mockSnapshot(): Snapshot {
   }));
   return {
     productName: "Pixel Gaming Helper",
-    version: "0.1.0",
+    version: "0.1.1",
     hardwareBuild: false,
     deckInfo: {
       model: "Stream Deck +",
@@ -77,6 +77,7 @@ function mockSnapshot(): Snapshot {
     },
     profiles,
     activeProfileId: "default",
+    deviceStatus: { state: "simulated" },
     profile: MOCK_PROFILES.default,
     settings: {
       start_minimized: false,

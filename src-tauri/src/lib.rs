@@ -127,9 +127,14 @@ pub fn run() {
             let (tx, rx) = mpsc::channel::<DeviceCommand>();
             let worker_profile = profile.clone();
             let initial_brightness = settings.brightness;
+            let device_status = Arc::new(Mutex::new(device::DeviceStatus::Searching));
+            let worker_status = device_status.clone();
+            let worker_app = app.handle().clone();
             thread::Builder::new()
                 .name("deck-device".into())
-                .spawn(move || device::run(worker_profile, initial_brightness, rx))
+                .spawn(move || {
+                    device::run(worker_app, worker_profile, worker_status, initial_brightness, rx)
+                })
                 .expect("failed to spawn device worker");
 
             let start_minimized = settings.start_minimized;
@@ -140,6 +145,7 @@ pub fn run() {
                 active_id: Mutex::new(active_id),
                 profile,
                 deck_info: DeckInfo::stream_deck_plus("—"),
+                device_status,
                 device_tx: Mutex::new(Some(tx)),
             });
 

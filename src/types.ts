@@ -73,11 +73,17 @@ export interface ProfileSummary {
   has_rules: boolean;
 }
 
+export type DeviceStatus =
+  | { state: "searching" }
+  | { state: "connected"; model: string; serial: string }
+  | { state: "simulated" };
+
 export interface Snapshot {
   productName: string;
   version: string;
   hardwareBuild: boolean;
   deckInfo: DeckInfo;
+  deviceStatus: DeviceStatus;
   profiles: ProfileSummary[];
   activeProfileId: string;
   profile: Profile;

@@ -5,7 +5,7 @@ use tauri::{AppHandle, State};
 
 use deck_core::{Action, DeckInfo, Profile};
 
-use crate::device::DeviceCommand;
+use crate::device::{DeviceCommand, DeviceStatus};
 use crate::settings::Settings;
 use crate::state::{self, AppState};
 
@@ -26,6 +26,7 @@ pub struct Snapshot {
     pub version: String,
     pub hardware_build: bool,
     pub deck_info: DeckInfo,
+    pub device_status: DeviceStatus,
     pub profiles: Vec<ProfileSummary>,
     pub active_profile_id: String,
     pub profile: Profile,
@@ -54,11 +55,13 @@ pub fn get_snapshot(state: State<'_, AppState>) -> Result<Snapshot, String> {
     let settings = state.settings.lock().map_err(|_| "settings lock poisoned")?.clone();
     let profile = state.profile.lock().map_err(|_| "profile lock poisoned")?.clone();
     let active_profile_id = state.active_id.lock().map_err(|_| "active id lock poisoned")?.clone();
+    let device_status = state.device_status.lock().map_err(|_| "status lock poisoned")?.clone();
     Ok(Snapshot {
         product_name: "Pixel Gaming Helper".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         hardware_build: cfg!(feature = "hardware"),
         deck_info: state.deck_info.clone(),
+        device_status,
         profiles: summaries(&state),
         active_profile_id,
         profile,

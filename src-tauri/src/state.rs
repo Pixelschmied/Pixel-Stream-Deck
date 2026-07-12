@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use deck_core::model::{Action, AppMatch, EncoderConfig, KeyConfig, Page};
 use deck_core::{DeckInfo, Profile};
 
-use crate::device::DeviceCommand;
+use crate::device::{DeviceCommand, DeviceStatus};
 use crate::settings::Settings;
 
 /// State shared across Tauri commands and worker threads.
@@ -22,6 +22,8 @@ pub struct AppState {
     pub profile: Arc<Mutex<Profile>>,
     /// Nominal layout of the target deck, so the UI can render slots.
     pub deck_info: DeckInfo,
+    /// Live connection status, updated by the device worker.
+    pub device_status: Arc<Mutex<DeviceStatus>>,
     /// Channel to the device worker; `None` until the worker is spawned.
     pub device_tx: Mutex<Option<Sender<DeviceCommand>>>,
 }

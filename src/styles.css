@@ -93,6 +93,18 @@ body {
 .badge.browser {
   color: var(--accent-2);
 }
+.badge.device.ok {
+  color: #56d364;
+  border-color: #2ea04333;
+}
+.badge.device.warn {
+  color: #e3b341;
+  border-color: #bb800933;
+  cursor: help;
+}
+.badge.device.searching {
+  color: var(--muted);
+}
 .tabs button,
 .page-tabs button {
   background: transparent;
