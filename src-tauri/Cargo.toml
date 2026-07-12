@@ -1,0 +1,30 @@
+[package]
+name = "pixel-gaming-helper"
+description = "Pixel Gaming Helper — an open desktop app to drive the Elgato Stream Deck +."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# The library holds all the logic so it can be shared with mobile targets and
+# integration tests; main.rs is a thin launcher.
+[lib]
+name = "pixel_gaming_helper_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# The hardware-agnostic core. The `hardware` feature is forwarded so a release
+# build actually talks to the device; without it the app runs on the mock deck.
+deck-core = { path = "../crates/deck-core" }
+
+[features]
+default = []
+# Build the app with real Stream Deck + USB support.
+hardware = ["deck-core/hardware"]

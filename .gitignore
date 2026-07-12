@@ -1,0 +1,16 @@
+# Rust
+/target
+/src-tauri/target
+
+# Tauri generated code (schemas etc.)
+/src-tauri/gen
+
+# Node / frontend
+node_modules
+/dist
+*.local
+
+# Logs & OS cruft
+*.log
+.DS_Store
+Thumbs.db

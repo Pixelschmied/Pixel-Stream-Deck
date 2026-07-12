@@ -1,0 +1,25 @@
+[package]
+name = "deck-core"
+description = "Hardware-agnostic core for Pixel Stream Deck: profile model, deck backend abstraction and the input->action controller."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+# Real hardware driver. Optional so the pure-logic core still compiles on
+# machines/CI without libusb/hidapi system libraries. Enable with:
+#   cargo build --features hardware
+elgato-streamdeck = { version = "0.13", optional = true }
+# NOTE: this must stay on the same major version of `image` that
+# elgato-streamdeck depends on, otherwise the DynamicImage types won't match.
+image = { version = "0.25", optional = true, default-features = false }
+
+[features]
+default = []
+# Pulls in the real Elgato Stream Deck driver and the hardware backend module.
+hardware = ["dep:elgato-streamdeck", "dep:image"]
