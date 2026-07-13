@@ -65,7 +65,7 @@ function mockSnapshot(): Snapshot {
   }));
   return {
     productName: "Pixel Gaming Helper",
-    version: "0.1.6",
+    version: "0.1.7",
     hardwareBuild: false,
     deckInfo: {
       model: "Stream Deck +",
